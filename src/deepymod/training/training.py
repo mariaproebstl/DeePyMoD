@@ -1,5 +1,7 @@
 """ Contains the train module that governs training Deepymod """
 import torch
+import numpy as np
+import matplotlib as plt
 from ..utils.logger import Logger
 from .convergence import Convergence
 from ..model.deepmod import DeepMoD
@@ -122,4 +124,19 @@ def train(
             converged = convergence(iteration, l1_norm)
             if converged:
                 break
+
+    # plot the predictions vs dataset
+    for i in np.arange(n_features):
+        # bring tensors in right order
+        time_s, pred_s = zip(*sorted(zip(data_train.detach().numpy(), prediction[:, i].detach().numpy())))
+        data_s, target_s = zip(*sorted(zip(data_train.detach().numpy(), target_train[:, i].detach().numpy())))
+        # plot prediction
+        fig, ax = plt.subplots()
+        ax.plot(data_s, target_s, label = "data")
+        ax.plot(time_s, pred_s, label = "u_hat")
+        ax.legend()
+        ax.set_title(f"x{i+1}")
+        # pyplt.yscale("log")
+        plt.show()  
+    
     logger.close(model)
