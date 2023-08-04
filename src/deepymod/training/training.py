@@ -1,7 +1,7 @@
 """ Contains the train module that governs training Deepymod """
 import torch
 import numpy as np
-import matplotlib as plt
+import matplotlib.pyplot as plt
 from ..utils.logger import Logger
 from .convergence import Convergence
 from ..model.deepmod import DeepMoD
