@@ -137,6 +137,7 @@ def train(
         ax.legend()
         ax.set_title(f"x{i+1}")
         # pyplt.yscale("log")
-        plt.show()  
+        plt.savefig(f'{log_dir}/prediction_x{i+1}.png')
+        plt.close()
     
     logger.close(model)
