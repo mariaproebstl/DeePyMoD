@@ -2,11 +2,9 @@
 import numpy as np
 import torch
 from torch.autograd import grad
-# from itertools import combinations, product
-# from functools import reduce
-from deepymod import Library
+from .deepmod import Library
 from typing import Tuple
-from deepymod.utils.types import TensorList
+from ..utils.types import TensorList
 
 
 class LibraryODE(Library):
