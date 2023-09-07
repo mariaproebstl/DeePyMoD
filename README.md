@@ -25,18 +25,16 @@ refer to the PyTorch ["Get Started"](https://pytorch.org/get-started/locally/) g
 that is optimal for your system. 
 
 ## Install 
-To install DeePyMoD, pip can be used
+To install the original version of DeePyMoD, pip can be used
 
 ``` pip install deepymod ```
 
 in the main directory. 
 
+### Development
+To install this development version of DeePyMoD, you can clone the package using:
 
-## Development
-
-If you wish to alter the code you can clone the package using:
-
-``` git clone git@github.com:PhIMaL/DeePyMoD.git ```
+``` git clone git@github.com/mariaproebstl/DeePyMoD.git ```
 
 and then install it from the cloned `DeePyMoD` directory using
 
