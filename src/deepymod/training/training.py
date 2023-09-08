@@ -1,6 +1,7 @@
 """ Contains the train module that governs training Deepymod """
 import torch
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 from ..utils.logger import Logger
 from .convergence import Convergence
@@ -140,7 +141,13 @@ def train(
         ax.legend()
         ax.set_title(f"x{i+1}")
         # pyplt.yscale("log")
-        plt.savefig(f'{log_dir}/prediction_x{i+1}.png')
+        plt.savefig(f'{log_dir}/Plots/prediction_x{i+1}.png', dpi = 200)
         plt.close()
+
+        # save data for the plots (prediction and train data)
+        df_pred = pd.DataFrame(time_s, pred_s)
+        df_data_train = pd.DataFrame(data_s, target_s)
+        df_pred.to_csv(f"{log_dir}/Data/prediction_x{i+1}.csv")
+        df_data_train.to_csv(f"{log_dir}/Data/data_train_x{i+1}.csv")
     
     logger.close(model)
