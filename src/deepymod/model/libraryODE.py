@@ -14,11 +14,13 @@ class LibraryODE(Library):
         2) growth rate,
         3) 2nd order interactions, i.e. [x1*x1, x1*x2, ..., x1*xn] and
         4) 3rd order interactions, i.e. [x1 * (x1*x1, x1*x2, ..., x1*xn, ..., xn*xn)]
+        OR (in case of int_order=1)
+        3) linear effects of all xi, i.e. [x1, x2, ..., xn]
 
         Order of terms is as in the description above
 
         Args:
-            int_order (int): maximum order of the interactions in the library (either 2 or 3)
+            int_order (int): maximum order of the interactions in the library - either 2 or 3 or 1 (for only linear effects)
             intercept (bool): the parameter tells whether an intercept is part of the library or not.
             True means that a vector containing ones is added to the library.
         """
@@ -50,16 +52,26 @@ class LibraryODE(Library):
 
         # list all 1-dimensional combinations (1, x1, x2, ..., xn)
         comb_1D = torch.cat((torch.ones(n_samples, 1), prediction), dim = 1)
-
+        
+        # for only linear effects
+        if self.int_order == 1:
+            for output in np.arange(n_outputs):
+                if self.intercept:
+                    theta_i = comb_1D
+                else: # without intercept
+                    theta_i = torch.cat(prediction, dim = 1)
+                theta.append(theta_i)
+            
         # for only 2nd order interactions
-        if self.int_order == 2:
+        elif self.int_order == 2:
             for output in np.arange(n_outputs):
                 int_2D = torch.mul(prediction[:, output : output + 1], comb_1D)
                 if self.intercept:
                     theta_i = torch.cat((torch.ones(n_samples, 1), int_2D), dim = 1)
                 else: # without intercept
                     theta_i = int_2D
-                theta.append(theta_i)   
+                theta.append(theta_i)
+            
         # to include 2nd and 3rd order interactions
         elif self.int_order == 3:
             # list all 2-dimensional combinations (x1^2, x1*x2, ..., x1*xn, ..., xn^2)
@@ -81,7 +93,7 @@ class LibraryODE(Library):
                     theta_i = torch.cat((int_2D, int_3D), dim = 1)
                 theta.append(theta_i)
         else: 
-            raise ValueError("int_order must be either 2 or 3!")
+            raise ValueError("int_order must be either 1, 2 or 3!")
 
         ### Construct a list of time_derivatives
         for output in np.arange(n_outputs):
@@ -119,7 +131,14 @@ class LibraryODE(Library):
         
         comb_all_chr = []
 
-        if self.int_order == 2:
+        if self.int_order == 1:
+            for output in np.arange(n_outputs):
+                if self.intercept:
+                    theta_i_chr = comb_1D_chr
+                else: # without intercept
+                    theta_i_chr = comb_1D_chr[1:]
+                comb_all_chr.append(theta_i_chr)     
+        elif self.int_order == 2:
             for output in np.arange(n_outputs):
                 int_2D_chr = [f"x{output+1}*" + x for x in comb_1D_chr]
                 if self.intercept:
@@ -144,10 +163,6 @@ class LibraryODE(Library):
                 theta_i_chr.extend(int_3D_chr)
                 comb_all_chr.append(theta_i_chr)
         else: 
-            raise ValueError("int_order must be either 2 or 3!")
+            raise ValueError("int_order must be either 1, 2 or 3!")
 
         return comb_all_chr
-        
-    
-
-    
