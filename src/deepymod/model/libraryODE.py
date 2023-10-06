@@ -59,7 +59,7 @@ class LibraryODE(Library):
                 if self.intercept:
                     theta_i = comb_1D
                 else: # without intercept
-                    theta_i = torch.cat(prediction, dim = 1)
+                    theta_i = prediction
                 theta.append(theta_i)
             
         # for only 2nd order interactions
