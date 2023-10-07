@@ -20,7 +20,7 @@ class LibraryODE(Library):
         Order of terms is as in the description above
 
         Args:
-            int_order (int): maximum order of the interactions in the library - either 2 or 3 or 1 (for only linear effects)
+            int_order (int): maximum order of the interactions in the library - either 2 or 3 or 1 (for only linear effects) or 4 (incl. linear, quadratic and 3rd order terms)
             intercept (bool): the parameter tells whether an intercept is part of the library or not.
             True means that a vector containing ones is added to the library.
         """
@@ -92,6 +92,27 @@ class LibraryODE(Library):
                 else: # without intercept
                     theta_i = torch.cat((int_2D, int_3D), dim = 1)
                 theta.append(theta_i)
+            
+        # to include linear, 2nd and 3rd order interactions
+        elif self.int_order == 4:
+            # list all 2-dimensional combinations (x1^2, x1*x2, ..., x1*xn, ..., xn^2)
+            comb_2D = torch.empty(n_samples, 1)
+            for i in np.arange(n_outputs):
+                for j in np.arange(i, n_outputs):
+                    # multiply x_i with x_j
+                    interaction = torch.mul(prediction[:, i:i+1], prediction[:, j:j+1])
+                    comb_2D = torch.cat((comb_2D, interaction), dim = 1)
+            # remove first column of comb_2D which consists of empty values
+            comb_2D = comb_2D[:, 1:]
+
+            for output in np.arange(n_outputs):
+                int_2D = torch.mul(prediction[:, output : output + 1], prediction)
+                int_3D = torch.mul(prediction[:, output : output + 1], comb_2D)
+                if self.intercept:
+                    theta_i = torch.cat((comb_1D, int_2D, int_3D), dim = 1)
+                else: # without intercept
+                    theta_i = torch.cat((prediction, int_2D, int_3D), dim = 1)
+                theta.append(theta_i)
         else: 
             raise ValueError("int_order must be either 1, 2 or 3!")
 
@@ -137,7 +158,7 @@ class LibraryODE(Library):
                     theta_i_chr = comb_1D_chr
                 else: # without intercept
                     theta_i_chr = comb_1D_chr[1:]
-                comb_all_chr.append(theta_i_chr)     
+                comb_all_chr.append(theta_i_chr) # all linear terms
         elif self.int_order == 2:
             for output in np.arange(n_outputs):
                 int_2D_chr = [f"x{output+1}*" + x for x in comb_1D_chr]
@@ -145,7 +166,7 @@ class LibraryODE(Library):
                     theta_i_chr = [1]
                 else: # without intercept
                     theta_i_chr = []
-                theta_i_chr.extend(int_2D_chr)
+                theta_i_chr.extend(int_2D_chr) # x_i + quadratic terms including x_i
                 comb_all_chr.append(theta_i_chr)     
         elif self.int_order == 3:
             comb_2D_chr = []
@@ -159,8 +180,24 @@ class LibraryODE(Library):
                     theta_i_chr = [1]
                 else: # without intercept
                     theta_i_chr = []
-                theta_i_chr.extend(int_2D_chr)
-                theta_i_chr.extend(int_3D_chr)
+                theta_i_chr.extend(int_2D_chr) # x_i + quadratic terms including x_i
+                theta_i_chr.extend(int_3D_chr) # 3rd order terms (only including x_i)
+                comb_all_chr.append(theta_i_chr)
+        elif self.int_order == 4:
+            comb_2D_chr = []
+            for i in np.arange(n_outputs):
+                for j in np.arange(i, n_outputs):
+                    comb_2D_chr.append(f"x{i+1}*x{j+1}")
+            for output in np.arange(n_outputs):
+                int_2D_chr = [f"x{output+1}*" + x for x in comb_1D_chr[1:]]
+                int_3D_chr = [f"x{output+1}*" + x for x in comb_2D_chr]
+                if self.intercept:
+                    theta_i_chr = [1]
+                else: # without intercept
+                    theta_i_chr = []
+                theta_i_chr.extend(comb_1D_chr[1:]) # all linear terms
+                theta_i_chr.extend(int_2D_chr) # quadratic terms (only including x_i)
+                theta_i_chr.extend(int_3D_chr) # 3rd order terms (only including x_i)
                 comb_all_chr.append(theta_i_chr)
         else: 
             raise ValueError("int_order must be either 1, 2 or 3!")
