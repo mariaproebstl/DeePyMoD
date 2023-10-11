@@ -27,7 +27,18 @@ class LeastSquares(Constraint):
         coeff_vectors = []
         for theta, dt in zip(sparse_thetas, time_derivs):
             Q, R = torch.qr(theta)  # solution of lst. sq. by QR decomp.
-            coeff_vectors.append(torch.inverse(R) @ Q.T @ dt)
+            try_again = True
+            count = 0
+            while try_again and count < 10:
+                count += 1
+                try:
+                    coeff_vectors.append(torch.inverse(R) @ Q.T @ dt)
+                    try_again = False
+                except torch._C._LinAlgError:
+                    R += 1e-10 * torch.eye(R.shape[0], R.shape[1])
+                    print("Error", count)
+                    print(R)
+
         return coeff_vectors
 
 
