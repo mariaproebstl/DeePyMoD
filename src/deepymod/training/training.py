@@ -21,6 +21,7 @@ def train(
     max_iterations: int = 10000,
     write_iterations: int = 25,
     sparsity_update: bool = True,
+    only_fitting: bool = False,
     **convergence_kwargs
 ) -> None:
     """Trains the DeepMoD model. This function automatically splits the data set in a train and test set.
@@ -37,6 +38,7 @@ def train(
         max_iterations (int, optional): [description]. Max number of epochs , by default 10000.
         write_iterations (int, optional): [description]. Sets how often data is written to tensorboard and checks train loss , by default 25.
         sparsity_update (bool, optional): [description]. Decides whether to use thresholding or exclude sparsity_mask step, by default True.
+        only_fitting (bool, optional): [description]. Decides if the optimazation of the library is excluded, by default False.
     """
     logger = Logger(exp_ID, log_dir)
     sparsity_scheduler.path = (
@@ -59,19 +61,25 @@ def train(
             batch_losses[1, :, batch_idx] = torch.mean(
                 (prediction - target_train) ** 2, dim=-2
             )  # loss per output
-            batch_losses[2, :, batch_idx] = torch.stack(
-                [
-                    torch.mean((dt - theta @ coeff_vector) ** 2)
-                    for dt, theta, coeff_vector in zip(
-                        time_derivs,
-                        thetas,
-                        model.constraint_coeffs(scaled=False, sparse=True),
-                    )
-                ]
-            )
-            batch_losses[0, :, batch_idx] = (
-                batch_losses[1, :, batch_idx] + batch_losses[2, :, batch_idx]
-            )
+            
+            if only_fitting:
+                batch_losses[0, :, batch_idx] = (
+                    batch_losses[1, :, batch_idx]
+                )
+            else:
+                batch_losses[2, :, batch_idx] = torch.stack(
+                    [
+                        torch.mean((dt - theta @ coeff_vector) ** 2)
+                        for dt, theta, coeff_vector in zip(
+                            time_derivs,
+                            thetas,
+                            model.constraint_coeffs(scaled=False, sparse=True),
+                        )
+                    ]
+                )
+                batch_losses[0, :, batch_idx] = (
+                    batch_losses[1, :, batch_idx] + batch_losses[2, :, batch_idx]
+                )
 
             # Optimizer step
             optimizer.zero_grad()
