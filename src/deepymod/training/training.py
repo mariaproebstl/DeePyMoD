@@ -73,7 +73,7 @@ def train(
                         for dt, theta, coeff_vector in zip(
                             time_derivs,
                             thetas,
-                            model.constraint_coeffs(scaled=False, sparse=True),
+                            model.constraint_coeffs(scaled=False, sparse=sparsity_update),
                         )
                     ]
                 )
@@ -110,8 +110,8 @@ def train(
                 loss.view(-1).mean(),
                 mse.view(-1),
                 reg.view(-1),
-                model.constraint_coeffs(sparse=True, scaled=True),
-                model.constraint_coeffs(sparse=True, scaled=False),
+                model.constraint_coeffs(sparse=sparsity_update, scaled=True),
+                model.constraint_coeffs(sparse=sparsity_update, scaled=False),
                 model.estimator_coeffs(),
                 MSE_test=mse_test,
             )
@@ -130,7 +130,7 @@ def train(
             # ================= Checking convergence
             l1_norm = torch.sum(
                 torch.abs(
-                    torch.cat(model.constraint_coeffs(sparse=True, scaled=True), dim=1)
+                    torch.cat(model.constraint_coeffs(sparse=sparsity_update, scaled=True), dim=1)
                 )
             )
             converged = convergence(iteration, l1_norm)
