@@ -20,7 +20,7 @@ class LibraryODE(Library):
         Order of terms is as in the description above
 
         Args:
-            int_order (int): maximum order of the interactions in the library - either 2 or 3 or 1 (for only linear effects) or 4 (incl. linear, quadratic and 3rd order terms)
+            int_order (int): maximum order of the interactions in the library - either 2 or 3 or 1 (for only linear effects) or 4, 5 (incl. all linear, quadratic (and 3rd order) terms)
             intercept (bool): the parameter tells whether an intercept is part of the library or not.
             True means that a vector containing ones is added to the library.
         """
@@ -113,8 +113,19 @@ class LibraryODE(Library):
                 else: # without intercept
                     theta_i = torch.cat((prediction, int_2D, int_3D), dim = 1)
                 theta.append(theta_i)
+        
+        # to include all linear and 2nd-order interactions
+        elif self.int_order == 5:
+            for output in np.arange(n_outputs):
+                int_2D = torch.mul(prediction[:, output : output + 1], prediction)
+                if self.intercept:
+                    theta_i = torch.cat((comb_1D, int_2D), dim = 1)
+                else: # without intercept
+                    theta_i = torch.cat((prediction, int_2D), dim = 1)
+                theta.append(theta_i)
+
         else: 
-            raise ValueError("int_order must be either 1, 2 or 3!")
+            raise ValueError("int_order must be either 1, 2, 3 or 4, 5!")
 
         ### Construct a list of time_derivatives
         for output in np.arange(n_outputs):
@@ -198,8 +209,19 @@ class LibraryODE(Library):
                 theta_i_chr.extend(comb_1D_chr[1:]) # all linear terms
                 theta_i_chr.extend(int_2D_chr) # quadratic terms (only including x_i)
                 theta_i_chr.extend(int_3D_chr) # 3rd order terms (only including x_i)
-                comb_all_chr.append(theta_i_chr)
+                comb_all_chr.append(theta_i_chr)        
+        # to include all linear and 2nd-order interactions
+        elif self.int_order == 5:
+            for output in np.arange(n_outputs):
+                int_2D_chr = [f"x{output+1}*" + x for x in comb_1D_chr[1:]]
+                if self.intercept:
+                    theta_i_chr = [1]
+                else: # without intercept
+                    theta_i_chr = []
+                theta_i_chr.extend(comb_1D_chr[1:]) # all linear terms
+                theta_i_chr.extend(int_2D_chr) # quadratic terms (only including x_i)
+                comb_all_chr.append(theta_i_chr)        
         else: 
-            raise ValueError("int_order must be either 1, 2 or 3!")
+            raise ValueError("int_order must be either 1, 2, 3 or 4, 5!")
 
         return comb_all_chr
